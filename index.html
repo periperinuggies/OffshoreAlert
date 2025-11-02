@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Track offshore wind conditions and surf forecasts for Australian coastal locations">
+    <title>OffshoreAlert - Australian Coastal Conditions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-image: url('https://as2.ftcdn.net/v2/jpg/03/11/38/67/1000_F_311386731_Zl4dMbUUlQwRI91V8WlXNSKn2mzuY8yx.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 10px;
+            color: #1F2937;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #1e3a8a;
+            margin-bottom: 10px;
+            padding: 8px 15px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 2px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 11px;
+            opacity: 0.7;
+            color: #1e3a8a;
+            margin: 0;
+        }
+
+        .clear-btn {
+            padding: 4px 8px;
+            background: #E48080;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 10px;
+            opacity: 0.8;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover {
+            opacity: 1;
+            transform: translateY(-1px);
+        }
+
+        /* Wizard */
+        .wizard {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(41, 118, 133, 0.12);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .wizard h2 {
+            margin-bottom: 20px;
+            color: #297685;
+        }
+
+        .wizard p {
+            margin-bottom: 20px;
+            color: #6B7280;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #D1BCAA;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #297685;
+        }
+
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #297685;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(41, 118, 133, 0.1);
+        }
+
+        .autocomplete-results.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:hover {
+            background: #E0F7FA;
+        }
+
+        .spot-name {
+            font-weight: 600;
+            color: #1F2937;
+        }
+
+        .spot-details {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+
+        .selected-location {
+            background: #E0F7FA;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            border-left: 3px solid #297685;
+        }
+
+        .selected-location.show {
+            display: block;
+        }
+
+        .selected-location h3 {
+            color: #297685;
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: #297685;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: #1F5661;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(41, 118, 133, 0.3);
+        }
+
+        .btn:disabled {
+            background: #D1BCAA;
+            opacity: 0.5;
+        }
+
+        .btn-secondary {
+            background: #94A7A8;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #7A8889;
+        }
+
+        /* Main App */
+        .app-view {
+            display: none;
+        }
+
+        .search-bar-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .inline-search {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid #D1BCAA;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .inline-search:focus {
+            outline: none;
+            border-color: #297685;
+        }
+
+        .add-btn {
+            padding: 10px 20px;
+            background: #297685;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover:not(:disabled) {
+            background: #1F5661;
+            transform: translateY(-1px);
+        }
+
+        .add-btn:disabled {
+            background: #D1BCAA;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .inline-results {
+            position: absolute;
+            top: 100%;
+            left: 10px;
+            right: 10px;
+            background: white;
+            border: 2px solid #297685;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            margin-top: -10px;
+            box-shadow: 0 4px 12px rgba(41, 118, 133, 0.1);
+        }
+
+        .inline-results.show {
+            display: block;
+        }
+
+        .search-bar-wrapper {
+            position: relative;
+        }
+
+        .locations-scroll {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding: 20px 0;
+            scroll-snap-type: x mandatory;
+        }
+
+        .locations-scroll::-webkit-scrollbar {
+            height: 10px;
+        }
+
+        .locations-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.5);
+            border-radius: 10px;
+        }
+
+        .location-card {
+            min-width: 90%;
+            max-width: 500px;
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.08);
+            scroll-snap-align: center;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 6px;
+            position: relative;
+        }
+
+        .card-title {
+            text-align: center;
+            background: #f8f9ff;
+            padding: 8px 15px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        .card-title h2 {
+            color: #297685;
+            font-size: 18px;
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .webcam-indicator {
+            font-size: 14px;
+            color: #297685;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .webcam-indicator:hover {
+            transform: scale(1.2);
+        }
+
+        .map-indicator {
+            font-size: 14px;
+            color: #667eea;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .map-indicator:hover {
+            transform: scale(1.2);
+        }
+
+        .card-title p {
+            color: #888;
+            font-size: 11px;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 6px;
+            position: absolute;
+            right: 0;
+        }
+
+        .icon-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .date-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .nav-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .current-date {
+            font-weight: 600;
+            min-width: 140px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .offshore-info {
+            text-align: center;
+            padding: 5px;
+            background: #f0f7ff;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            margin: 6px 0;
+        }
+
+        .hour-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .time-label {
+            min-width: 45px;
+            font-weight: 600;
+            font-size: 12px;
+            text-align: right;
+        }
+
+        .wind-bar {
+            flex: 1;
+            height: 34px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            color: white;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .wind-bar .left {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .wind-bar .center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .wind-bar .right {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 10px;
+            font-size: 12px;
+            flex: 1;
+        }
+
+        .swell-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            line-height: 1.3;
+        }
+
+        .sun-event {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 8px 0;
+            padding: 6px 10px;
+            background: linear-gradient(90deg, rgba(255,193,7,0.1), rgba(255,193,7,0.2), rgba(255,193,7,0.1));
+            border-left: 3px solid #ffc107;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .sun-event:hover {
+            background: linear-gradient(90deg, rgba(255,193,7,0.15), rgba(255,193,7,0.25), rgba(255,193,7,0.15));
+        }
+
+        .sun-event.sunrise {
+            background: linear-gradient(90deg, rgba(255,152,0,0.1), rgba(255,193,7,0.2), rgba(255,152,0,0.1));
+            border-left-color: #ff9800;
+        }
+
+        .sun-event.sunrise:hover {
+            background: linear-gradient(90deg, rgba(255,152,0,0.15), rgba(255,193,7,0.25), rgba(255,152,0,0.15));
+        }
+
+        .sun-event.sunset {
+            background: linear-gradient(90deg, rgba(255,87,34,0.1), rgba(255,152,0,0.2), rgba(255,87,34,0.1));
+            border-left-color: #ff5722;
+        }
+
+        .sun-event.sunset:hover {
+            background: linear-gradient(90deg, rgba(255,87,34,0.15), rgba(255,152,0,0.25), rgba(255,87,34,0.15));
+        }
+
+        .sun-icon {
+            font-size: 18px;
+        }
+
+        .sun-label {
+            font-weight: 600;
+            font-size: 12px;
+            color: #555;
+        }
+
+        .toggle-icon {
+            position: absolute;
+            font-size: 16px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .toggle-icon.left {
+            left: 10px;
+        }
+
+        .toggle-icon.right {
+            right: 10px;
+        }
+
+        .collapsed {
+            display: none !important;
+        }
+
+        .night-period {
+            opacity: 0.5;
+        }
+
+        .offshore-summary {
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .offshore-column {
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .offshore-column-title {
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            opacity: 0.8;
+            line-height: 1.3;
+            min-height: 26px;
+        }
+
+        .offshore-column-time {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 3px 0;
+        }
+
+        .offshore-column-details {
+            font-size: 10px;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+
+        .offshore-column.previous {
+            background: linear-gradient(135deg, #D1BCAA, #C2AD9A);
+            color: #4B5563;
+            border: 1px solid #C2AD9A;
+        }
+
+        .offshore-column.today {
+            background: linear-gradient(135deg, #9EE2C7, #95E1C8);
+            color: #1F2937;
+            box-shadow: 0 3px 12px rgba(158, 226, 199, 0.3);
+        }
+
+        .offshore-column.next {
+            background: linear-gradient(135deg, #A8D8EA, #79B6BC);
+            color: #1F2937;
+            box-shadow: 0 3px 12px rgba(168, 216, 234, 0.3);
+        }
+
+        .offshore-column.none {
+            background: #F9F9F9;
+            color: #94A7A8;
+            border: 1px dashed #D1BCAA;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-icon {
+            font-size: 16px;
+            min-width: 20px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .webcam-section {
+            margin: 12px 0;
+            padding: 12px;
+            background: #f8f9ff;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .webcam-title {
+            font-weight: 600;
+            font-size: 13px;
+            color: #667eea;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .webcam-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+
+        .webcam-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            border: 1px solid #667eea;
+            transition: all 0.2s;
+        }
+
+        .webcam-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 12px;
+            margin-top: 30px;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🌊 OffshoreAlert 🏄‍♂️</h1>
+                <p>Australian Coastal Conditions Tracker</p>
+            </div>
+        </div>
+
+        <!-- Wizard -->
+        <div id="wizard" class="wizard">
+            <h2>Show me</h2>
+            <p id="status">Loading locations...</p>
+            <div class="search-container">
+                <input type="text" id="search" class="search-input" placeholder="Search beaches, bays, boat ramps...">
+                <div id="results" class="autocomplete-results"></div>
+            </div>
+            <div id="selected" class="selected-location">
+                <h3 id="selName"></h3>
+                <p><strong>Region:</strong> <span id="selRegion"></span></p>
+                <p><strong>Offshore:</strong> <span id="selWind"></span></p>
+            </div>
+            <button class="btn" id="saveBtn" onclick="save()" disabled>Save</button>
+            <button class="btn btn-secondary hidden" id="cancelBtn" onclick="cancel()">Cancel</button>
+        </div>
+
+        <!-- App -->
+        <div id="app" class="app-view">
+            <div class="search-bar-wrapper">
+                <div class="search-bar-container">
+                    <input type="text" id="inlineSearch" class="inline-search" placeholder="Search beaches, bays, boat ramps...">
+                    <button class="add-btn" id="inlineAddBtn" onclick="addInline()" disabled>Add</button>
+                </div>
+                <div id="inlineResults" class="inline-results"></div>
+            </div>
+            <div id="cards" class="locations-scroll"></div>
+        </div>
+
+        <div class="footer">
+            OffshoreAlert - Track your perfect surf conditions
+        </div>
+
+    </div>
+
+    <script src="locations_data.js"></script>
+    <script>
+        let spots = [];  // Will be loaded from embedded data
+        let selected = null;
+        let inlineSelected = null;
+        let dayOffsets = {};
+
+        // Storage with error handling
+        function getL() {
+            try {
+                return JSON.parse(localStorage.getItem('offshorealert_locs') || '[]');
+            } catch(e) {
+                console.error('Error reading from localStorage:', e);
+                return [];
+            }
+        }
+        function setL(l) {
+            try {
+                localStorage.setItem('offshorealert_locs', JSON.stringify(l));
+            } catch(e) {
+                console.error('Error writing to localStorage:', e);
+                alert('Unable to save data. Storage may be full.');
+            }
+        }
+
+        // Wind helpers
+        const dirMap = {N:0,NNE:22.5,NE:45,ENE:67.5,E:90,ESE:112.5,SE:135,SSE:157.5,S:180,SSW:202.5,SW:225,WSW:247.5,W:270,WNW:292.5,NW:315,NNW:337.5};
+        function deg2dir(d) {
+            const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+            return dirs[Math.round(d/22.5)%16];
+        }
+
+        // Get directional arrow for wind direction
+        function getWindArrow(dir) {
+            const arrows = {
+                'N': '↑',
+                'NNE': '↗',
+                'NE': '↗',
+                'ENE': '↗',
+                'E': '→',
+                'ESE': '↘',
+                'SE': '↘',
+                'SSE': '↘',
+                'S': '↓',
+                'SSW': '↙',
+                'SW': '↙',
+                'WSW': '↙',
+                'W': '←',
+                'WNW': '↖',
+                'NW': '↖',
+                'NNW': '↖'
+            };
+            return arrows[dir] || '→';
+        }
+        function quality(cur, off) {
+            const diff = Math.min(Math.abs(dirMap[cur]-dirMap[off]), 360-Math.abs(dirMap[cur]-dirMap[off]));
+            if(diff<=45) return 'offshore';
+            if(diff<=90) return 'cross';
+            return 'onshore';
+        }
+        function color(q, windSpeed) {
+            // Base colors with intensity based on wind speed
+            if (q === 'offshore') {
+                // Green: lighter = better (less wind), darker = worse (more wind)
+                if (windSpeed < 10) return '#4ade80'; // Light green - perfect
+                if (windSpeed < 15) return '#22c55e'; // Medium green - good
+                if (windSpeed < 20) return '#16a34a'; // Darker green - ok
+                return '#15803d'; // Dark green - strong but offshore
+            } else if (q === 'cross') {
+                // Yellow/Orange: lighter = better, darker = worse
+                if (windSpeed < 15) return '#fbbf24'; // Light yellow - ok
+                if (windSpeed < 25) return '#f59e0b'; // Orange - getting worse
+                return '#d97706'; // Dark orange - bad cross winds
+            } else {
+                // Red: lighter = bad, darker = terrible
+                if (windSpeed < 15) return '#f87171'; // Light red - bad
+                if (windSpeed < 25) return '#ef4444'; // Medium red - worse
+                if (windSpeed < 35) return '#dc2626'; // Dark red - terrible
+                return '#991b1b'; // Very dark red - blown out
+            }
+        }
+
+        function getIcons(q, windSpeed, swellHeight) {
+            let icons = '';
+
+            if (q === 'offshore') {
+                // Surf icons based on swell height (0-1m, 1-2m, 2-3m, etc)
+                const surfCount = swellHeight ? Math.min(Math.ceil(swellHeight), 5) : 1;
+                icons = '🏄‍♂️'.repeat(surfCount);
+            } else if (q === 'cross') {
+                // Wave icons for cross winds based on wind speed (0-10, 10-20, 20-30)
+                const waveCount = Math.min(Math.ceil(windSpeed / 10), 5);
+                icons = '🌊'.repeat(waveCount);
+            } else {
+                // Wind/storm icons for onshore based on wind speed
+                const windCount = Math.min(Math.ceil(windSpeed / 10), 5);
+                icons = '💨'.repeat(windCount);
+            }
+
+            return icons;
+        }
+
+        // Fuzzy search with null safety
+        function fuzzy(q, t) {
+            if (!q || !t) return false;
+            q=q.toLowerCase(); t=t.toLowerCase();
+            if(t.includes(q)) return true;
+            let i=0;
+            for(let c of t) if(c==q[i]) i++;
+            return i==q.length;
+        }
+
+        // Wizard Search
+        document.getElementById('search').addEventListener('input', e => {
+            const q = e.target.value.trim();
+            const r = document.getElementById('results');
+            if(!q) { r.classList.remove('show'); return; }
+            const m = spots.filter(s => fuzzy(q,s.name)||fuzzy(q,s.type)||fuzzy(q,s.state)).slice(0,15);
+            if(!m.length) { r.innerHTML='<div class="autocomplete-item">No locations found</div>'; r.classList.add('show'); return; }
+            r.innerHTML = m.map((s,i) => `<div class="autocomplete-item" data-i="${spots.indexOf(s)}"><div class="spot-name">${s.name}</div><div class="spot-details">${s.type} • ${s.state} • Offshore: ${s.offshoreWind}</div></div>`).join('');
+            r.classList.add('show');
+        });
+
+        // Inline Search
+        document.getElementById('inlineSearch').addEventListener('input', e => {
+            const q = e.target.value.trim();
+            const r = document.getElementById('inlineResults');
+            if(!q) { r.classList.remove('show'); inlineSelected = null; document.getElementById('inlineAddBtn').disabled = true; return; }
+            const m = spots.filter(s => fuzzy(q,s.name)||fuzzy(q,s.type)||fuzzy(q,s.state)).slice(0,15);
+            if(!m.length) { r.innerHTML='<div class="autocomplete-item">No locations found</div>'; r.classList.add('show'); return; }
+            r.innerHTML = m.map((s,i) => `<div class="autocomplete-item" data-i="${spots.indexOf(s)}" data-inline="true"><div class="spot-name">${s.name}</div><div class="spot-details">${s.type} • ${s.state} • Offshore: ${s.offshoreWind}</div></div>`).join('');
+            r.classList.add('show');
+        });
+
+        document.addEventListener('click', e => {
+            const item = e.target.closest('.autocomplete-item');
+            if(item) {
+                const spotData = spots[item.dataset.i];
+                if(item.dataset.inline) {
+                    // Inline search selection
+                    inlineSelected = spotData;
+                    document.getElementById('inlineSearch').value = inlineSelected.name;
+                    document.getElementById('inlineResults').classList.remove('show');
+                    document.getElementById('inlineAddBtn').disabled = false;
+                } else {
+                    // Wizard search selection
+                    selected = spotData;
+                    document.getElementById('search').value = selected.name;
+                    document.getElementById('results').classList.remove('show');
+                    document.getElementById('selName').textContent = selected.name;
+                    document.getElementById('selRegion').textContent = `${selected.type} • ${selected.state}`;
+                    document.getElementById('selWind').textContent = selected.offshoreWind;
+                    document.getElementById('selected').classList.add('show');
+                    document.getElementById('saveBtn').disabled = false;
+                }
+            } else if(!e.target.closest('.search-container') && !e.target.closest('.search-bar-wrapper')) {
+                document.getElementById('results').classList.remove('show');
+                document.getElementById('inlineResults').classList.remove('show');
+            }
+        });
+
+        // Add location from inline search
+        function addInline() {
+            if(!inlineSelected) return;
+
+            // Validate location has required fields
+            if (!inlineSelected.lat || !inlineSelected.lon || !inlineSelected.name) {
+                alert('Invalid location data. Please try another location.');
+                return;
+            }
+
+            const locs = getL();
+            if(locs.some(l => l.name==inlineSelected.name)) {
+                alert('This location is already in your list!');
+                return;
+            }
+
+            locs.push({...inlineSelected});
+            setL(locs);
+            inlineSelected = null;
+            document.getElementById('inlineSearch').value = '';
+            document.getElementById('inlineAddBtn').disabled = true;
+            renderCards();
+        }
+
+        // Save
+        function save() {
+            if(!selected) return;
+
+            // Validate location has required fields
+            if (!selected.lat || !selected.lon || !selected.name) {
+                alert('Invalid location data. Please try another location.');
+                return;
+            }
+
+            const locs = getL();
+            if(locs.some(l => l.name==selected.name)) {
+                alert('This location is already in your list!');
+                return;
+            }
+
+            locs.push({...selected});
+            setL(locs);
+            selected = null;
+            document.getElementById('search').value = '';
+            document.getElementById('selected').classList.remove('show');
+            document.getElementById('saveBtn').disabled = true;
+            showApp();
+        }
+
+        function cancel() {
+            selected = null;
+            document.getElementById('search').value = '';
+            document.getElementById('selected').classList.remove('show');
+            document.getElementById('saveBtn').disabled = true;
+            showApp();
+        }
+
+        function showWizard() {
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('wizard').style.display = 'block';
+            document.getElementById('cancelBtn').classList.remove('hidden');
+        }
+
+        function showApp() {
+            const locs = getL();
+            if(!locs.length) {
+                document.getElementById('wizard').style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+                document.getElementById('cancelBtn').classList.add('hidden');
+                return;
+            }
+            document.getElementById('wizard').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            renderCards();
+        }
+
+        function renderCards() {
+            const locs = getL();
+            const container = document.getElementById('cards');
+            if (!container) {
+                console.error('Cards container not found');
+                return;
+            }
+            container.innerHTML = locs.map((loc, idx) => `
+                <div class="location-card" id="card-${idx}">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <h2>
+                                <a href="https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lon}" target="_blank" class="map-indicator" title="View on Google Maps">📍</a>
+                                ${loc.name}
+                                ${loc.webcams && loc.webcams.length > 0 ? '<span class="webcam-indicator" onclick="scrollToWebcam(event, ' + idx + ')" title="Webcams available">📹</span>' : ''}
+                            </h2>
+                        </div>
+                        <div class="card-actions">
+                            <button class="icon-btn delete-btn" onclick="del(${idx})">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="offshore-info">Offshore wind: <strong>${getWindArrow(loc.offshoreWind)} ${loc.offshoreWind}</strong></div>
+                    ${loc.webcams && loc.webcams.length > 0 ? `
+                        <div class="webcam-section">
+                            <div class="webcam-title">📹 Live Webcams</div>
+                            <div class="webcam-links">
+                                ${loc.webcams.map(cam => `
+                                    <a href="${cam.url}" target="_blank" class="webcam-link">
+                                        ${cam.name}
+                                        <span style="font-size:10px">↗</span>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    <div class="offshore-summary" id="offshore-summary-${idx}"></div>
+                    <div class="date-nav">
+                        <button class="nav-btn" onclick="prevDay(${idx})">←</button>
+                        <div class="current-date" id="date-${idx}">Today</div>
+                        <button class="nav-btn" onclick="nextDay(${idx})">→</button>
+                    </div>
+                    <div class="loading" id="loading-${idx}">Loading...</div>
+                    <div class="timeline hidden" id="timeline-${idx}"></div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-icon">💨</div><span>Onshore</span></div>
+                        <div class="legend-item"><div class="legend-icon">🌊</div><span>Cross Wind</span></div>
+                        <div class="legend-item"><div class="legend-icon">🏄‍♂️</div><span>Offshore</span></div>
+                    </div>
+                </div>
+            `).join('');
+            locs.forEach((loc, idx) => {
+                if(!dayOffsets[idx]) dayOffsets[idx] = 0;
+                loadWind(loc, idx);
+            });
+        }
+
+        async function loadWind(loc, idx) {
+            const offset = dayOffsets[idx] || 0;
+            const date = new Date();
+            date.setDate(date.getDate() + offset);
+
+            document.getElementById(`loading-${idx}`).classList.remove('hidden');
+            document.getElementById(`timeline-${idx}`).classList.add('hidden');
+
+            // Update date display
+            const dateStr = offset==0 ? 'Today' : offset==1 ? 'Tomorrow' : offset==-1 ? 'Yesterday' : date.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+            document.getElementById(`date-${idx}`).textContent = dateStr;
+
+            try {
+                // Fetch data for current day (for display)
+                const dateParam = date.toISOString().split('T')[0];
+                const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height&start_date=${dateParam}&end_date=${dateParam}&timezone=auto`;
+                const windUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m,temperature_2m,weather_code&daily=sunrise,sunset&start_date=${dateParam}&end_date=${dateParam}&timezone=auto`;
+
+                // Fetch 7 days back and 7 days forward for pocket search
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const weekBackDate = new Date(today);
+                weekBackDate.setDate(today.getDate() - 7);
+                const weekForwardDate = new Date(today);
+                weekForwardDate.setDate(today.getDate() + 7);
+
+                const weekBackParam = weekBackDate.toISOString().split('T')[0];
+                const weekForwardParam = weekForwardDate.toISOString().split('T')[0];
+
+                // Fetch data for 7 days back
+                const weekBackWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${weekBackParam}&end_date=${today.toISOString().split('T')[0]}&timezone=auto`;
+                const weekBackMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,swell_wave_height&start_date=${weekBackParam}&end_date=${today.toISOString().split('T')[0]}&timezone=auto`;
+
+                // Fetch data for 7 days forward
+                const weekForwardWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${today.toISOString().split('T')[0]}&end_date=${weekForwardParam}&timezone=auto`;
+                const weekForwardMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,swell_wave_height&start_date=${today.toISOString().split('T')[0]}&end_date=${weekForwardParam}&timezone=auto`;
+
+                const [windRes, marineRes, weekBackWindRes, weekBackMarineRes, weekForwardWindRes, weekForwardMarineRes] = await Promise.all([
+                    fetch(windUrl), fetch(url),
+                    fetch(weekBackWindUrl), fetch(weekBackMarineUrl),
+                    fetch(weekForwardWindUrl), fetch(weekForwardMarineUrl)
+                ]);
+
+                // Check for API errors
+                if (!windRes.ok) throw new Error(`Wind API error: ${windRes.status}`);
+                if (!marineRes.ok) throw new Error(`Marine API error: ${marineRes.status}`);
+                if (!weekBackWindRes.ok) throw new Error(`Historical wind API error: ${weekBackWindRes.status}`);
+                if (!weekBackMarineRes.ok) throw new Error(`Historical marine API error: ${weekBackMarineRes.status}`);
+                if (!weekForwardWindRes.ok) throw new Error(`Forecast wind API error: ${weekForwardWindRes.status}`);
+                if (!weekForwardMarineRes.ok) throw new Error(`Forecast marine API error: ${weekForwardMarineRes.status}`);
+
+                const windData = await windRes.json();
+                const marineData = await marineRes.json();
+                const weekBackWindData = await weekBackWindRes.json();
+                const weekBackMarineData = await weekBackMarineRes.json();
+                const weekForwardWindData = await weekForwardWindRes.json();
+                const weekForwardMarineData = await weekForwardMarineRes.json();
+
+                // Validate required data
+                if (!windData?.hourly?.wind_direction_10m || !windData?.hourly?.wind_speed_10m) {
+                    throw new Error('Invalid or missing wind data from API');
+                }
+                if (!windData?.daily?.sunrise || !windData?.daily?.sunset) {
+                    throw new Error('Invalid or missing sunrise/sunset data from API');
+                }
+
+                document.getElementById(`loading-${idx}`).classList.add('hidden');
+                document.getElementById(`timeline-${idx}`).classList.remove('hidden');
+
+                const timeline = document.getElementById(`timeline-${idx}`);
+                timeline.innerHTML = '';
+
+                const now = new Date();
+                const currentHour = offset === 0 ? now.getHours() : -1;
+
+                // Get sunrise and sunset times from API (in location's local timezone)
+                const sunriseTime = new Date(windData.daily.sunrise[0]);
+                const sunsetTime = new Date(windData.daily.sunset[0]);
+                const sunriseHour = sunriseTime.getHours();
+                const sunriseMinute = sunriseTime.getMinutes();
+                const sunsetHour = sunsetTime.getHours();
+                const sunsetMinute = sunsetTime.getMinutes();
+
+                let nextOffshore = null;
+                let offshoreHours = [];
+                let offshoreStart = null;
+
+                // Build timeline entries array (will include both hours and sun events)
+                let timelineEntries = [];
+
+                for(let i=0; i<24; i++) {
+                    const windDir = windData.hourly.wind_direction_10m[i];
+                    const windSpeed = windData.hourly.wind_speed_10m[i];
+
+                    if (windDir === null || windDir === undefined || windSpeed === null || windSpeed === undefined) {
+                        console.warn(`Missing data for hour ${i} at ${loc.name}`);
+                        continue;
+                    }
+
+                    const dir = deg2dir(windDir);
+                    const speed = Math.round(windSpeed);
+                    const q = quality(dir, loc.offshoreWind);
+                    const hourTime = new Date(windData.hourly.time[i]);
+                    const h = hourTime.getHours();
+                    const timeStr = h==0?'12am':h<12?`${h}am`:h==12?'12pm':`${h-12}pm`;
+
+                    // Get marine data (with fallback)
+                    const waveHeight = marineData.hourly?.wave_height?.[i] || marineData.hourly?.swell_wave_height?.[i];
+                    const wavePeriod = marineData.hourly?.wave_period?.[i];
+                    const swellHeight = marineData.hourly?.swell_wave_height?.[i];
+
+                    // Color based on quality AND wind speed
+                    const c = color(q, speed);
+
+                    // Swell info text
+                    let swellText = '';
+                    if (waveHeight !== null && waveHeight !== undefined) {
+                        swellText = `${waveHeight.toFixed(1)}m`;
+                        if (wavePeriod) swellText += ` • ${Math.round(wavePeriod)}s`;
+                    }
+
+                    // Dynamic icons based on conditions
+                    const icons = getIcons(q, speed, waveHeight || swellHeight || 1);
+
+                    // Check if this hour is during night time
+                    const isNight = h < sunriseHour || h >= sunsetHour;
+
+                    // Track offshore hours with window detection
+                    if(q === 'offshore') {
+                        if(!offshoreStart) offshoreStart = timeStr;
+                        offshoreHours.push({hour: h, time: timeStr, dir, speed, waveHeight});
+                    } else {
+                        if(offshoreStart && offshoreHours.length > 0) {
+                            // Window ended
+                            offshoreStart = null;
+                        }
+                    }
+
+                    // Find next offshore window (only future hours if today)
+                    if(!nextOffshore && q==='offshore' && h >= currentHour) {
+                        // Find when this window ends
+                        let endIdx = i;
+                        for(let j = i+1; j < 24; j++) {
+                            const nextDir = deg2dir(windData.hourly.wind_direction_10m[j]);
+                            const nextQ = quality(nextDir, loc.offshoreWind);
+                            if(nextQ !== 'offshore') break;
+                            endIdx = j;
+                        }
+                        const endH = new Date(windData.hourly.time[endIdx]).getHours();
+                        const endTimeStr = endH==0?'12am':endH<12?`${endH}am`:endH==12?'12pm':`${endH-12}pm`;
+
+                        nextOffshore = {
+                            time: timeStr,
+                            endTime: endTimeStr,
+                            duration: endIdx - i + 1,
+                            dir,
+                            speed,
+                            waveHeight,
+                            date: offset==0?'Today':offset==1?'Tomorrow':offset==-1?'Yesterday':dateStr
+                        };
+                    }
+
+                    // Determine if hour is pre-sunrise or post-sunset
+                    const isPreSunrise = h < sunriseHour;
+                    const isPostSunset = h >= sunsetHour;
+                    const nightClass = isPreSunrise ? 'pre-sunrise' : isPostSunset ? 'post-sunset' : '';
+
+                    // Add hour entry to timeline
+                    timelineEntries.push({
+                        type: 'hour',
+                        hour: h,
+                        sortKey: h,
+                        isNight: isNight,
+                        isPreSunrise: isPreSunrise,
+                        isPostSunset: isPostSunset,
+                        html: `
+                            <div class="hour-row ${isNight ? 'night-period' : ''} ${nightClass} ${nightClass ? 'collapsed' : ''}" data-card="${idx}">
+                                <div class="time-label">${timeStr}</div>
+                                <div class="wind-bar" style="background:${c}">
+                                    <div class="left">
+                                        <span style="font-size:13px">${dir} ${speed}km/h</span>
+                                    </div>
+                                    <div class="center">
+                                        <span style="font-size:14px">${icons}</span>
+                                    </div>
+                                    <div class="right">
+                                        ${swellText ? `<div class="swell-info"><div>${swellText}</div></div>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `
+                    });
+                }
+
+                // Add sunrise event
+                const sunriseTimeStr = sunriseHour==0?'12am':sunriseHour<12?`${sunriseHour}am`:sunriseHour==12?'12pm':`${sunriseHour-12}pm`;
+                timelineEntries.push({
+                    type: 'sunrise',
+                    hour: sunriseHour,
+                    sortKey: sunriseHour + (sunriseMinute / 60),
+                    html: `
+                        <div class="sun-event sunrise" onclick="togglePreSunrise(${idx})" id="sunrise-${idx}">
+                            <div class="toggle-icon left" id="sunrise-toggle-left-${idx}">▼</div>
+                            <div class="sun-icon">🌅</div>
+                            <div class="sun-label">Sunrise ${sunriseTimeStr} (${sunriseMinute.toString().padStart(2, '0')}min)</div>
+                            <div class="toggle-icon right" id="sunrise-toggle-right-${idx}">▼</div>
+                        </div>
+                    `
+                });
+
+                // Add sunset event
+                const sunsetTimeStr = sunsetHour==0?'12am':sunsetHour<12?`${sunsetHour}am`:sunsetHour==12?'12pm':`${sunsetHour-12}pm`;
+                timelineEntries.push({
+                    type: 'sunset',
+                    hour: sunsetHour,
+                    sortKey: sunsetHour + (sunsetMinute / 60),
+                    html: `
+                        <div class="sun-event sunset" onclick="togglePostSunset(${idx})" id="sunset-${idx}">
+                            <div class="toggle-icon left" id="sunset-toggle-left-${idx}">▼</div>
+                            <div class="sun-icon">🌇</div>
+                            <div class="sun-label">Sunset ${sunsetTimeStr} (${sunsetMinute.toString().padStart(2, '0')}min)</div>
+                            <div class="toggle-icon right" id="sunset-toggle-right-${idx}">▼</div>
+                        </div>
+                    `
+                });
+
+                // Sort entries by time and render
+                timelineEntries.sort((a, b) => a.sortKey - b.sortKey);
+                timeline.innerHTML = timelineEntries.map(entry => entry.html).join('');
+
+                // Helper function to detect offshore pockets (3+ consecutive hours)
+                function findOffshorePockets(windDataDay, marineDataDay, offshoreWindDir, dateObj) {
+                    if(!windDataDay.hourly || !windDataDay.hourly.wind_direction_10m || !windDataDay.hourly.wind_speed_10m) {
+                        return [];
+                    }
+
+                    const pockets = [];
+                    let currentPocket = null;
+
+                    for(let i=0; i<24; i++) {
+                        const windDir = windDataDay.hourly.wind_direction_10m[i];
+                        const windSpeed = windDataDay.hourly.wind_speed_10m[i];
+
+                        if (windDir === null || windDir === undefined || windSpeed === null || windSpeed === undefined) {
+                            // End current pocket if data is missing
+                            if(currentPocket && currentPocket.hours.length >= 3) {
+                                pockets.push(currentPocket);
+                            }
+                            currentPocket = null;
+                            continue;
+                        }
+
+                        const dir = deg2dir(windDir);
+                        const q = quality(dir, offshoreWindDir);
+                        const hourTime = new Date(windDataDay.hourly.time[i]);
+                        const h = hourTime.getHours();
+                        const timeStr = h==0?'12am':h<12?`${h}am`:h==12?'12pm':`${h-12}pm`;
+                        const waveHeight = marineDataDay.hourly?.wave_height?.[i] || marineDataDay.hourly?.swell_wave_height?.[i];
+
+                        if(q === 'offshore') {
+                            // Continue or start pocket
+                            if(!currentPocket) {
+                                currentPocket = {
+                                    hours: [],
+                                    date: dateObj,
+                                    startHour: h,
+                                    startTime: timeStr
+                                };
+                            }
+                            currentPocket.hours.push({hour: h, time: timeStr, dir, speed: Math.round(windSpeed), waveHeight});
+                            currentPocket.endHour = h;
+                            currentPocket.endTime = timeStr;
+                        } else {
+                            // End current pocket
+                            if(currentPocket && currentPocket.hours.length >= 3) {
+                                pockets.push(currentPocket);
+                            }
+                            currentPocket = null;
+                        }
+                    }
+
+                    // Check last pocket
+                    if(currentPocket && currentPocket.hours.length >= 3) {
+                        pockets.push(currentPocket);
+                    }
+
+                    // Calculate average wave for each pocket
+                    pockets.forEach(pocket => {
+                        const avgWave = pocket.hours.reduce((sum, h) => sum + (h.waveHeight || 0), 0) / pocket.hours.length;
+                        pocket.avgWave = avgWave > 0 ? avgWave : null;
+                        pocket.count = pocket.hours.length;
+                    });
+
+                    return pockets;
+                }
+
+                // Find offshore pockets across 7 days back and 7 days forward
+                const allPockets = [];
+
+                // Process week back data
+                if (weekBackWindData?.hourly?.wind_direction_10m && weekBackWindData?.hourly?.wind_speed_10m) {
+                    const hoursCount = weekBackWindData.hourly.wind_direction_10m.length;
+                    for (let i = 0; i < hoursCount; i++) {
+                        const windDir = weekBackWindData.hourly.wind_direction_10m[i];
+                        const windSpeed = weekBackWindData.hourly.wind_speed_10m[i];
+                        const timeStr = weekBackWindData.hourly.time[i];
+                        const hourDate = new Date(timeStr);
+
+                        if (windDir !== null && windSpeed !== null) {
+                            const dir = deg2dir(windDir);
+                            const q = quality(dir, loc.offshoreWind);
+
+                            if (q === 'offshore') {
+                                const waveHeight = weekBackMarineData?.hourly?.wave_height?.[i] || weekBackMarineData?.hourly?.swell_wave_height?.[i];
+                                allPockets.push({
+                                    date: hourDate,
+                                    hour: hourDate.getHours(),
+                                    direction: dir,
+                                    speed: Math.round(windSpeed),
+                                    wave: waveHeight
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Process week forward data
+                if (weekForwardWindData?.hourly?.wind_direction_10m && weekForwardWindData?.hourly?.wind_speed_10m) {
+                    const hoursCount = weekForwardWindData.hourly.wind_direction_10m.length;
+                    for (let i = 0; i < hoursCount; i++) {
+                        const windDir = weekForwardWindData.hourly.wind_direction_10m[i];
+                        const windSpeed = weekForwardWindData.hourly.wind_speed_10m[i];
+                        const timeStr = weekForwardWindData.hourly.time[i];
+                        const hourDate = new Date(timeStr);
+
+                        if (windDir !== null && windSpeed !== null) {
+                            const dir = deg2dir(windDir);
+                            const q = quality(dir, loc.offshoreWind);
+
+                            if (q === 'offshore') {
+                                const waveHeight = weekForwardMarineData?.hourly?.wave_height?.[i] || weekForwardMarineData?.hourly?.swell_wave_height?.[i];
+                                allPockets.push({
+                                    date: hourDate,
+                                    hour: hourDate.getHours(),
+                                    direction: dir,
+                                    speed: Math.round(windSpeed),
+                                    wave: waveHeight
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Group consecutive offshore hours into pockets
+                const groupedPockets = [];
+                let currentPocketGroup = [];
+
+                allPockets.sort((a, b) => a.date - b.date);
+
+                for (let i = 0; i < allPockets.length; i++) {
+                    if (currentPocketGroup.length === 0) {
+                        currentPocketGroup.push(allPockets[i]);
+                    } else {
+                        const lastHour = currentPocketGroup[currentPocketGroup.length - 1];
+                        const timeDiff = (allPockets[i].date - lastHour.date) / (1000 * 60 * 60);
+
+                        if (timeDiff <= 1.5) {
+                            currentPocketGroup.push(allPockets[i]);
+                        } else {
+                            if (currentPocketGroup.length > 0) {
+                                const pocketDate = new Date(currentPocketGroup[0].date);
+                                pocketDate.setHours(0, 0, 0, 0);
+                                const avgWave = currentPocketGroup.reduce((sum, h) => sum + (h.wave || 0), 0) / currentPocketGroup.length;
+                                groupedPockets.push({
+                                    date: pocketDate,
+                                    startTime: currentPocketGroup[0].hour,
+                                    endTime: currentPocketGroup[currentPocketGroup.length - 1].hour,
+                                    count: currentPocketGroup.length,
+                                    avgWave: avgWave > 0 ? avgWave : null,
+                                    hours: currentPocketGroup
+                                });
+                            }
+                            currentPocketGroup = [allPockets[i]];
+                        }
+                    }
+                }
+
+                if (currentPocketGroup.length > 0) {
+                    const pocketDate = new Date(currentPocketGroup[0].date);
+                    pocketDate.setHours(0, 0, 0, 0);
+                    const avgWave = currentPocketGroup.reduce((sum, h) => sum + (h.wave || 0), 0) / currentPocketGroup.length;
+                    groupedPockets.push({
+                        date: pocketDate,
+                        startTime: currentPocketGroup[0].hour,
+                        endTime: currentPocketGroup[currentPocketGroup.length - 1].hour,
+                        count: currentPocketGroup.length,
+                        avgWave: avgWave > 0 ? avgWave : null,
+                        hours: currentPocketGroup
+                    });
+                }
+
+                // Find pockets relative to the SELECTED date (not today)
+                let selectedDatePocket = null;
+                let previousPocket = null;
+                let nextPocket = null;
+
+                const selectedDateStart = new Date(date);
+                selectedDateStart.setHours(0, 0, 0, 0);
+                const selectedDateEnd = new Date(date);
+                selectedDateEnd.setHours(23, 59, 59, 999);
+
+                for (let pocket of groupedPockets) {
+                    const pocketTime = pocket.date.getTime();
+                    const selectedTime = selectedDateStart.getTime();
+
+                    if (pocketTime === selectedTime) {
+                        selectedDatePocket = pocket;
+                    } else if (pocketTime < selectedTime) {
+                        previousPocket = pocket;
+                    } else if (pocketTime > selectedTime && !nextPocket) {
+                        nextPocket = pocket;
+                    }
+                }
+
+                // Format pocket for display
+                function formatPocket(pocket) {
+                    if(!pocket) return null;
+
+                    const pocketDate = new Date(pocket.date);
+                    const daysDiff = Math.floor((pocketDate - selectedDateStart) / (1000 * 60 * 60 * 24));
+
+                    let dateLabel;
+                    if(daysDiff === 0) {
+                        dateLabel = 'Today';
+                    } else if(daysDiff === -1) {
+                        dateLabel = 'Yesterday';
+                    } else if(daysDiff === 1) {
+                        dateLabel = 'Tomorrow';
+                    } else {
+                        dateLabel = pocketDate.toLocaleDateString('en-GB', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short'
+                        });
+                    }
+
+                    // Format start and end times
+                    const formatTime = (hour) => {
+                        if (hour === 0) return '12am';
+                        if (hour < 12) return `${hour}am`;
+                        if (hour === 12) return '12pm';
+                        return `${hour - 12}pm`;
+                    };
+
+                    return {
+                        ...pocket,
+                        dateLabel: dateLabel,
+                        displayDate: pocketDate.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit'
+                        }),
+                        startTime: formatTime(pocket.startTime),
+                        endTime: formatTime(pocket.endTime)
+                    };
+                }
+
+                const previousWindow = formatPocket(previousPocket);
+                const currentDayWindows = formatPocket(selectedDatePocket);
+                const nextDayWindow = formatPocket(nextPocket);
+
+                // Determine label for selected date column
+                const selectedDateLabel = offset === 0 ? 'Today\'s Pocket' : (offset === 1 ? 'Tomorrow\'s Pocket' : (offset === -1 ? 'Yesterday\'s Pocket' : dateStr + ' Pocket'));
+                const noSelectedDateMsg = offset === 0 ? 'No pocket today' : 'No pocket';
+
+                // Render 3-column summary with Offshore Pockets
+                const summaryEl = document.getElementById(`offshore-summary-${idx}`);
+                let summaryHTML = '';
+
+                // Column 1: Previous Pocket
+                summaryHTML += '<div class="offshore-column ' + (previousWindow ? 'previous' : 'none') + '">';
+                summaryHTML += '<div class="offshore-column-title">⏮ Previous Pocket</div>';
+                if(previousWindow) {
+                    summaryHTML += `<div class="offshore-column-time" style="font-size:11px;font-weight:700;margin-bottom:3px">${previousWindow.dateLabel}</div>`;
+                    summaryHTML += `<div class="offshore-column-time" style="font-size:10px;margin-bottom:2px">${previousWindow.displayDate}</div>`;
+                    summaryHTML += `<div class="offshore-column-time">${previousWindow.startTime} - ${previousWindow.endTime}</div>`;
+                    const waveInfo = previousWindow.avgWave ? ` • ${previousWindow.avgWave.toFixed(1)}m` : '';
+                    summaryHTML += `<div class="offshore-column-details">${previousWindow.count} hours${waveInfo}</div>`;
+                } else {
+                    summaryHTML += '<div class="offshore-column-time">—</div>';
+                    summaryHTML += '<div class="offshore-column-details">No pocket found</div>';
+                }
+                summaryHTML += '</div>';
+
+                // Column 2: Selected Date's Pocket
+                summaryHTML += '<div class="offshore-column ' + (currentDayWindows ? 'today' : 'none') + '">';
+                summaryHTML += `<div class="offshore-column-title">📍 ${selectedDateLabel}</div>`;
+                if(currentDayWindows) {
+                    summaryHTML += `<div class="offshore-column-time" style="font-size:11px;font-weight:700;margin-bottom:3px">${currentDayWindows.dateLabel}</div>`;
+                    summaryHTML += `<div class="offshore-column-time">${currentDayWindows.startTime} - ${currentDayWindows.endTime}</div>`;
+                    const waveInfo = currentDayWindows.avgWave ? ` • ${currentDayWindows.avgWave.toFixed(1)}m` : '';
+                    summaryHTML += `<div class="offshore-column-details">${currentDayWindows.count} hours${waveInfo}</div>`;
+                } else {
+                    summaryHTML += '<div class="offshore-column-time">—</div>';
+                    summaryHTML += `<div class="offshore-column-details">${noSelectedDateMsg}</div>`;
+                }
+                summaryHTML += '</div>';
+
+                // Column 3: Next Pocket
+                summaryHTML += '<div class="offshore-column ' + (nextDayWindow ? 'next' : 'none') + '">';
+                summaryHTML += '<div class="offshore-column-title">⏭ Next Pocket</div>';
+                if(nextDayWindow) {
+                    summaryHTML += `<div class="offshore-column-time" style="font-size:11px;font-weight:700;margin-bottom:3px">${nextDayWindow.dateLabel}</div>`;
+                    summaryHTML += `<div class="offshore-column-time" style="font-size:10px;margin-bottom:2px">${nextDayWindow.displayDate}</div>`;
+                    summaryHTML += `<div class="offshore-column-time">${nextDayWindow.startTime} - ${nextDayWindow.endTime}</div>`;
+                    const swellInfo = nextDayWindow.avgWave ? ` • ${nextDayWindow.avgWave.toFixed(1)}m` : '';
+                    summaryHTML += `<div class="offshore-column-details">${nextDayWindow.count} hours${swellInfo}</div>`;
+                } else {
+                    summaryHTML += '<div class="offshore-column-time">—</div>';
+                    summaryHTML += '<div class="offshore-column-details">No pocket found</div>';
+                }
+                summaryHTML += '</div>';
+
+                summaryEl.innerHTML = summaryHTML;
+            } catch(e) {
+                console.error(`Error loading wind data for ${loc.name}:`, e);
+                document.getElementById(`loading-${idx}`).classList.add('hidden');
+                document.getElementById(`timeline-${idx}`).classList.remove('hidden');
+
+                let errorMsg = 'Unable to load weather data. ';
+                if (e.message.includes('API error')) {
+                    errorMsg += 'The weather service may be unavailable. Please try again later.';
+                } else if (e.message.includes('Failed to fetch')) {
+                    errorMsg += 'Please check your internet connection.';
+                } else if (e.message.includes('Invalid')) {
+                    errorMsg += 'The data received was incomplete. Please try again.';
+                } else {
+                    errorMsg += 'Please try again later.';
+                }
+
+                document.getElementById(`timeline-${idx}`).innerHTML = `
+                    <div style="text-align:center;padding:20px;color:#dc3545;background:#ffe6e6;border-radius:8px;margin:10px 0">
+                        <div style="font-size:24px;margin-bottom:10px">⚠️</div>
+                        <div style="font-weight:600;margin-bottom:5px">Error Loading Data</div>
+                        <div style="font-size:13px">${errorMsg}</div>
+                        <button onclick="loadWind(getL()[${idx}], ${idx})" style="margin-top:15px;padding:8px 16px;background:#297685;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function prevDay(idx) {
+            dayOffsets[idx] = (dayOffsets[idx]||0) - 1;
+            if(dayOffsets[idx] < -7) dayOffsets[idx] = -7;
+            const locs = getL();
+            loadWind(locs[idx], idx);
+        }
+
+        function nextDay(idx) {
+            dayOffsets[idx] = (dayOffsets[idx]||0) + 1;
+            if(dayOffsets[idx] > 7) dayOffsets[idx] = 7;
+            const locs = getL();
+            loadWind(locs[idx], idx);
+        }
+
+        function del(idx) {
+            const locs = getL();
+            if(confirm(`Delete ${locs[idx].name}?`)) {
+                locs.splice(idx, 1);
+                setL(locs);
+                delete dayOffsets[idx];
+                renderCards();
+                if(!locs.length) showApp();
+            }
+        }
+
+        function clearAll() {
+            if(confirm('Clear all locations? This cannot be undone.')) {
+                try {
+                    localStorage.removeItem('offshorealert_locs');
+                    location.reload();
+                } catch(e) {
+                    console.error('Error clearing data:', e);
+                    alert('Unable to clear data. Please try again.');
+                }
+            }
+        }
+
+        // Toggle pre-sunrise hours
+        function togglePreSunrise(idx) {
+            const timeline = document.getElementById(`timeline-${idx}`);
+            const preSunriseHours = timeline.querySelectorAll('.pre-sunrise');
+            const toggleIconLeft = document.getElementById(`sunrise-toggle-left-${idx}`);
+            const toggleIconRight = document.getElementById(`sunrise-toggle-right-${idx}`);
+
+            preSunriseHours.forEach(hour => {
+                hour.classList.toggle('collapsed');
+            });
+
+            // Update icons
+            const iconText = preSunriseHours[0]?.classList.contains('collapsed') ? '▼' : '▲';
+            toggleIconLeft.textContent = iconText;
+            toggleIconRight.textContent = iconText;
+        }
+
+        // Toggle post-sunset hours
+        function togglePostSunset(idx) {
+            const timeline = document.getElementById(`timeline-${idx}`);
+            const postSunsetHours = timeline.querySelectorAll('.post-sunset');
+            const toggleIconLeft = document.getElementById(`sunset-toggle-left-${idx}`);
+            const toggleIconRight = document.getElementById(`sunset-toggle-right-${idx}`);
+
+            postSunsetHours.forEach(hour => {
+                hour.classList.toggle('collapsed');
+            });
+
+            // Update icons
+            const iconText = postSunsetHours[0]?.classList.contains('collapsed') ? '▼' : '▲';
+            toggleIconLeft.textContent = iconText;
+            toggleIconRight.textContent = iconText;
+        }
+
+        // Scroll to webcam section
+        function scrollToWebcam(event, idx) {
+            event.preventDefault();
+            event.stopPropagation();
+            const card = document.getElementById(`card-${idx}`);
+            const webcamSection = card.querySelector('.webcam-section');
+            if (webcamSection) {
+                webcamSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                // Add a brief highlight effect
+                webcamSection.style.transition = 'all 0.3s';
+                webcamSection.style.transform = 'scale(1.02)';
+                webcamSection.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                setTimeout(() => {
+                    webcamSection.style.transform = 'scale(1)';
+                    webcamSection.style.boxShadow = 'none';
+                }, 300);
+            }
+        }
+
+        // Load locations database
+        function loadLocations() {
+            try {
+                document.getElementById('status').textContent = 'Loading locations...';
+                document.getElementById('status').style.color = '#667eea';
+
+                // Load from embedded data
+                spots = spotsData;
+
+                document.getElementById('status').textContent = `${spots.length} locations loaded ✓`;
+                document.getElementById('status').style.color = '#28a745';
+
+                showApp();
+            } catch (error) {
+                console.error('Error loading locations:', error);
+                document.getElementById('status').textContent = 'Error loading locations. Please refresh.';
+                document.getElementById('status').style.color = '#dc3545';
+            }
+        }
+
+        // Init
+        loadLocations();
+    </script>
+</body>
+</html>
