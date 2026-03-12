@@ -1017,6 +1017,7 @@
                             </h2>
                         </div>
                         <div class="card-actions">
+                            <span style="font-size:10px;opacity:0.7;margin-right:6px;">📡 BOM ACCESS</span>
                             <button class="icon-btn delete-btn" onclick="del(${idx})">🗑️</button>
                         </div>
                     </div>
@@ -1071,7 +1072,7 @@
                 // Fetch data for current day (for display)
                 const dateParam = date.toISOString().split('T')[0];
                 const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,wave_direction,wave_period,wind_wave_height,swell_wave_height&start_date=${dateParam}&end_date=${dateParam}&timezone=auto`;
-                const windUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m,temperature_2m,weather_code&daily=sunrise,sunset&start_date=${dateParam}&end_date=${dateParam}&timezone=auto`;
+                const windUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m,temperature_2m,weather_code&daily=sunrise,sunset&start_date=${dateParam}&end_date=${dateParam}&timezone=auto&models=bom_access_global&current=wind_speed_10m,wind_direction_10m`;
 
                 // Fetch 7 days back and 7 days forward for pocket search
                 const today = new Date();
@@ -1086,11 +1087,11 @@
                 const weekForwardParam = weekForwardDate.toISOString().split('T')[0];
 
                 // Fetch data for 7 days back
-                const weekBackWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${weekBackParam}&end_date=${today.toISOString().split('T')[0]}&timezone=auto`;
+                const weekBackWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${weekBackParam}&end_date=${today.toISOString().split('T')[0]}&timezone=auto&models=bom_access_global`;
                 const weekBackMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,swell_wave_height&start_date=${weekBackParam}&end_date=${today.toISOString().split('T')[0]}&timezone=auto`;
 
                 // Fetch data for 7 days forward
-                const weekForwardWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${today.toISOString().split('T')[0]}&end_date=${weekForwardParam}&timezone=auto`;
+                const weekForwardWindUrl = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wind_speed_10m,wind_direction_10m&start_date=${today.toISOString().split('T')[0]}&end_date=${weekForwardParam}&timezone=auto&models=bom_access_global`;
                 const weekForwardMarineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${loc.lat}&longitude=${loc.lon}&hourly=wave_height,swell_wave_height&start_date=${today.toISOString().split('T')[0]}&end_date=${weekForwardParam}&timezone=auto`;
 
                 const [windRes, marineRes, weekBackWindRes, weekBackMarineRes, weekForwardWindRes, weekForwardMarineRes] = await Promise.all([
@@ -1285,6 +1286,24 @@
                 // Sort entries by time and render
                 timelineEntries.sort((a, b) => a.sortKey - b.sortKey);
                 timeline.innerHTML = timelineEntries.map(entry => entry.html).join('');
+
+                // Step 3: Show live current conditions if viewing today and current data is available
+                if (offset === 0 && windData.current) {
+                    const liveSpeed = Math.round(windData.current.wind_speed_10m);
+                    const liveDir = deg2dir(windData.current.wind_direction_10m);
+                    const liveQ = quality(liveDir, loc.offshoreWind);
+                    const liveC = color(liveQ, liveSpeed);
+                    const liveBanner = document.createElement('div');
+                    liveBanner.style.cssText = 'margin-bottom:6px;border-radius:8px;overflow:hidden;border:2px solid rgba(255,255,255,0.4);';
+                    liveBanner.innerHTML = `
+                        <div class="wind-bar" style="background:${liveC};display:flex;align-items:center;padding:6px 10px;gap:8px;">
+                            <span style="font-size:11px;font-weight:700;opacity:0.9;white-space:nowrap;">🔴 LIVE NOW</span>
+                            <span style="font-size:14px;font-weight:600;">${liveDir} ${liveSpeed}km/h</span>
+                            <span style="font-size:11px;opacity:0.8;margin-left:auto;">BOM analysed</span>
+                        </div>
+                    `;
+                    timeline.insertBefore(liveBanner, timeline.firstChild);
+                }
 
                 // Helper function to detect offshore pockets (3+ consecutive hours)
                 function findOffshorePockets(windDataDay, marineDataDay, offshoreWindDir, dateObj) {
